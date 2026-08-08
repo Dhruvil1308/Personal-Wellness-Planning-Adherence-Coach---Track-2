@@ -132,18 +132,19 @@ misses, its summary and the feedback that fed the next day.
 
 ---
 
-## The 80% adherence gate
+## The 70% adherence gate
 
-**A new day's plan is only generated once the previous planned day reaches 80%
+**A new day's plan is only generated once the previous planned day reaches 70%
 completion.** Below that, the day is locked: `POST /api/plan` answers `423 Locked`
 and `/today` shows the shortfall instead of a Generate button.
 
 | Behaviour | Rule |
 |---|---|
-| Threshold | `PLAN_UNLOCK_THRESHOLD`, default `80` |
+| Threshold | `PLAN_UNLOCK_THRESHOLD`, default `70` |
 | Which day is judged | The most recent day *before* this one that has a plan — not `date - 1`, so a locked day cannot be skipped over by waiting |
 | First ever plan | Always allowed — there is nothing to have completed |
-| Existing plan | Never re-gated, so a day already underway can still be regenerated |
+| Today & the past | Never locked — you must always be able to log the day you are in |
+| A future day | Gated **even if a plan row already exists**, so pre-generating tomorrow before finishing today does not skip the rule |
 | Where it is enforced | Inside `ensurePlan()`, not the route, so no caller can create a plan around it |
 | Recovery | The score is computed live — finish the blocking day and the gate opens by itself |
 
@@ -402,7 +403,7 @@ accumulate; meals and exercise hold a single replaceable check-in.
 | `GET /api/auth/me` | The signed-in user |
 | `GET/POST /api/profile` | Read / update the wellness profile (screened) |
 | `GET /api/plan?date=` | Plan + computed adherence for a day |
-| `POST /api/plan` | Generate a day (`{ date?, force? }`) — `423` when the 80% gate is closed |
+| `POST /api/plan` | Generate a day (`{ date?, force? }`) — `423` when the 70% gate is closed |
 | `GET/POST /api/plan/unlock` | Read the override audit trail / override the gate for one day |
 | `POST/DELETE /api/checkin` | Log or undo a check-in |
 | `POST /api/feedback` | Daily energy / difficulty / hunger / mood / notes |
@@ -424,7 +425,7 @@ Every route above requires a session; see [Accounts & authentication](#accounts-
   regional meal options are **built**. The expert-review workflow is **not**.
 - Reminder times are wall-clock and resolve against the server's timezone, so the server
   should run in the user's timezone (IST here).
-- The 80% gate is strict by design; without the recorded override a single bad day would
+- The 70% gate is strict by design; without the recorded override a single bad day would
   lock the account permanently.
 - Calorie and hydration figures are population estimates (Mifflin-St Jeor, ~33 ml/kg)
   used to keep the model inside sensible bounds — they are not clinical targets.

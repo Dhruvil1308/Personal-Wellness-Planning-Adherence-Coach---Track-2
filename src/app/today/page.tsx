@@ -82,7 +82,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         </div>
       </header>
 
-      {!plan ? (
+      {!plan || !gate.unlocked ? (
         <div className="mt-6 space-y-4">
           {gate.unlocked ? (
             <EmptyState

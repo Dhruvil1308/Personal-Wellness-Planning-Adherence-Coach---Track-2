@@ -249,7 +249,7 @@ function slide(n, eyebrow, title) {
     x: 1.26, y: 5.16, w: 6.5, h: 0.3, fontSize: 13.5, bold: true, color: C.ink,
   });
   text(s,
-    "A new day is only generated once the previous day reaches 80% completion. Below that the day is locked, the shortfall is shown, and the score is live — finish the day and it unlocks itself.",
+    "A new day is only generated once the previous day reaches 70% completion. Below that the day is locked, the shortfall is shown, and the score is live — finish the day and it unlocks itself.",
     { x: 1.26, y: 5.52, w: 11.1, h: 0.62, fontSize: 11.5, color: C.muted, lineSpacing: 16 },
   );
 }

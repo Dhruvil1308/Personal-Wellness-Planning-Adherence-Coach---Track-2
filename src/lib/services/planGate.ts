@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/db";
 import { computeAdherence, type PlanWithItems } from "@/lib/adherence";
-import { prettyDay } from "@/lib/date";
+import { prettyDay, today } from "@/lib/date";
 
 /**
  * The adherence gate.
  *
  * RULE: the next day's plan cannot be generated until the most recent planned
- * day reaches PLAN_UNLOCK_THRESHOLD (default 80%). Below it, that day is locked.
+ * day reaches PLAN_UNLOCK_THRESHOLD (default 70%). Below it, that day is locked.
  *
  * Why an override exists. Taken literally the rule deadlocks: a locked day has
  * no plan, a day with no plan has nothing to check in on, so adherence can never
@@ -19,8 +19,8 @@ import { prettyDay } from "@/lib/date";
  */
 
 export const PLAN_UNLOCK_THRESHOLD = (() => {
-  const raw = Number(process.env.PLAN_UNLOCK_THRESHOLD ?? 80);
-  if (!Number.isFinite(raw)) return 80;
+  const raw = Number(process.env.PLAN_UNLOCK_THRESHOLD ?? 70);
+  if (!Number.isFinite(raw)) return 70;
   return Math.min(100, Math.max(0, raw));
 })();
 
@@ -76,13 +76,18 @@ export async function getGateStatus(
     overridden: false,
   };
 
-  // An existing plan is never re-gated — the gate governs creation only, so a
-  // day already in progress can still be regenerated or repaired.
+  // Today and the past are never locked: you must always be able to log the day
+  // you are living in, and re-locking history would erase the record the gate
+  // itself depends on.
+  //
+  // A FUTURE day is gated even when a plan row already exists. Without this, a
+  // day generated ahead of time — before the previous day was finished — would
+  // stay open forever and the rule could be skipped just by pre-generating.
   const existing = await prisma.plan.findUnique({
     where: { userId_date: { userId, date } },
     select: { id: true },
   });
-  if (existing) {
+  if (existing && date <= today()) {
     return {
       ...base,
       unlocked: true,
