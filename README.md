@@ -9,7 +9,7 @@ professional. That boundary is enforced in code, not just in copy — see
 
 ---
 
-## Team
+## Team: Hack Pandavs
 
 - **Dhruvil Prajapati**
 - **Ronak Hinglajiya**
