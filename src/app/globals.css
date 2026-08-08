@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* WellPath — calm, single light theme. Deliberately not theme-switching:
+   the palette carries the "calm wellness" tone and stays legible on projectors. */
+:root {
+  --background: #f6f7f4;
+  --surface: #ffffff;
+  --foreground: #17211c;
+  --muted: #64726a;
+  --line: #e2e6df;
+
+  --brand: #1f6f4a;
+  --brand-soft: #e8f2ec;
+  --brand-strong: #145236;
+
+  --meal: #c2703b;
+  --meal-soft: #fbeee4;
+  --water: #2b7fa8;
+  --water-soft: #e5f1f7;
+  /* Categorical trio for the three streams. Validated for CVD separation and
+     contrast against the chart surface — do not re-hue one in isolation. */
+  --exercise: #9c3f6d;
+  --exercise-soft: #f8e9f1;
+
+  --danger: #b4452f;
+  --danger-soft: #fbeae6;
+  --warn: #9a6a17;
+  --warn-soft: #fbf1de;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-strong: var(--brand-strong);
+  --color-meal: var(--meal);
+  --color-meal-soft: var(--meal-soft);
+  --color-water: var(--water);
+  --color-water-soft: var(--water-soft);
+  --color-exercise: var(--exercise);
+  --color-exercise-soft: var(--exercise-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface;
+  }
+  .label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm
+      text-foreground outline-none transition
+      focus:border-brand focus:ring-2 focus:ring-brand/20;
+  }
+  /* Tailwind v4 cannot @apply a class defined in this same layer, so the base
+     button rules are repeated rather than composed from .btn. */
+  .btn,
+  .btn-primary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
+      text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-55;
+  }
+  .btn-primary {
+    @apply bg-brand text-white hover:bg-brand-strong;
+  }
+  .btn-ghost {
+    @apply border border-line bg-surface text-foreground hover:bg-brand-soft;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+  }
+}

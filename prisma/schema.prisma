@@ -1,0 +1,156 @@
+// WellPath AI — Personal Wellness Planning & Adherence Coach
+// SQLite has no native enums, so status/type columns are constrained in app code
+// (see src/lib/constants.ts) and stored as plain strings.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id       String  @id @default(cuid())
+  name     String
+  ageRange String // "18-24" | "25-34" | ...
+  sex      String? // optional, used only for rough energy estimates
+  heightCm Float
+  weightKg Float
+
+  goal          String // weight_loss | muscle_gain | maintain | energy | stress
+  activityLevel String // sedentary | light | moderate | active
+
+  dietaryPreference String // vegetarian | vegan | eggetarian | non_veg | jain
+  cuisine           String // north_indian | south_indian | gujarati | mediterranean | global
+  allergies         String @default("") // comma separated, free text
+  dislikes          String @default("")
+
+  limitations String @default("") // e.g. "knee pain", "desk job, low back stiffness"
+  equipment   String @default("none") // none | bands | dumbbells | full_gym
+
+  wakeTime         String @default("07:00")
+  sleepTime        String @default("23:00")
+  workoutWindowMin Int    @default(30)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plans     Plan[]
+  summaries DailySummary[]
+  feedbacks Feedback[]
+  messages  CoachMessage[]
+}
+
+model Plan {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date String // YYYY-MM-DD, the day this plan is for
+
+  // Explainability: why this plan looks the way it does
+  rationale      String
+  adjustmentNote String? // what changed vs. the previous day and why
+  coachMessage   String? // supportive, non-clinical motivation
+
+  hydrationTargetMl Int
+  calorieTarget     Int?
+  proteinTargetG    Int?
+  focus             String? // one-line theme for the day
+
+  generatedBy String   @default("ai") // ai | fallback
+  createdAt   DateTime @default(now())
+
+  items    PlanItem[]
+  summary  DailySummary?
+  feedback Feedback?
+
+  @@unique([userId, date])
+}
+
+model PlanItem {
+  id     String @id @default(cuid())
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  type String // MEAL | WATER | EXERCISE
+  slot String? // breakfast | lunch | dinner | snack | hydration | movement
+
+  title         String
+  details       String  @default("")
+  scheduledTime String // "08:00"
+  targetQty     Float? // ml (water) | minutes (exercise) | servings (meal)
+  unit          String? // ml | min | serving
+  calories      Int?
+  proteinG      Int?
+  why           String  @default("") // per-item explanation
+  sortOrder     Int     @default(0)
+
+  checkIns CheckIn[]
+}
+
+model CheckIn {
+  id         String   @id @default(cuid())
+  planItemId String
+  item       PlanItem @relation(fields: [planItemId], references: [id], onDelete: Cascade)
+
+  status    String // DONE | PARTIAL | SKIPPED
+  actualQty Float? // e.g. 250 (ml of water logged), 20 (minutes actually done)
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId String @unique
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  date       String
+  energy     Int // 1-5
+  difficulty Int // 1-5 (how hard the plan felt)
+  hunger     Int // 1-5
+  mood       String?
+  notes      String  @default("")
+  createdAt  DateTime @default(now())
+}
+
+model DailySummary {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId String @unique
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  date String
+
+  adherencePct Float
+  mealPct      Float
+  waterPct     Float
+  exercisePct  Float
+
+  waterMl           Int
+  caloriesConsumed  Int   @default(0)
+  itemsCompleted    Int   @default(0)
+  itemsTotal        Int   @default(0)
+
+  summaryText   String // AI narrative built from recorded data only
+  wins          String @default("[]") // JSON array of strings
+  gaps          String @default("[]") // JSON array of strings
+  focusTomorrow String @default("")
+
+  createdAt DateTime @default(now())
+}
+
+model CoachMessage {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role      String // user | coach
+  content   String
+  createdAt DateTime @default(now())
+}
