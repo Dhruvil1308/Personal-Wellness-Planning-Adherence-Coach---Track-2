@@ -137,7 +137,7 @@ export function FeedbackForm({
         <button type="submit" className="btn-primary" disabled={busy}>
           {busy ? "Saving…" : existing ? "Update feedback" : "Save feedback"}
         </button>
-        {saved && <span className="text-sm font-medium text-brand">Saved ✓</span>}
+        {saved && <span className="text-sm font-medium text-brand">Saved</span>}
       </div>
     </form>
   );

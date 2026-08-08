@@ -31,6 +31,13 @@ export function GeneratePlanButton({
         body: JSON.stringify({ date, force }),
       });
       const data = await res.json();
+      // 423 = the adherence gate is closed. Refresh so the page swaps in the
+      // lock card, which explains the rule and offers the override.
+      if (res.status === 423) {
+        setError(data.error ?? "This day is locked.");
+        router.refresh();
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? "Could not generate the plan");
       router.refresh();
     } catch (e) {

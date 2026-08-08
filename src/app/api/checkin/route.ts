@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { fail, handleError, ok } from "@/lib/api";
-import { getCurrentUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { CHECKIN_STATUSES } from "@/lib/constants";
 import { computeAdherence, type PlanWithItems } from "@/lib/adherence";
 import { getPlan } from "@/lib/services/plans";
@@ -15,8 +15,7 @@ const checkInSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) return fail("Create a profile first", 404);
+    const user = await requireUser();
 
     const body = checkInSchema.parse(await req.json());
 
@@ -62,8 +61,7 @@ export async function POST(req: Request) {
 /** Undo — clears the check-ins on an item so it returns to pending. */
 export async function DELETE(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) return fail("Create a profile first", 404);
+    const user = await requireUser();
 
     const url = new URL(req.url);
     const planItemId = url.searchParams.get("planItemId");

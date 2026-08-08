@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { fail, handleError, ok } from "@/lib/api";
-import { getCurrentUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { buildDailySummary } from "@/lib/services/plans";
 import { isValidDayKey, today } from "@/lib/date";
 
@@ -11,8 +11,7 @@ const bodySchema = z.object({
 
 export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) return fail("Create a profile first", 404);
+    const user = await requireUser();
 
     const date = new URL(req.url).searchParams.get("date") ?? today();
     if (!isValidDayKey(date)) return fail("Invalid date", 422);
@@ -29,8 +28,7 @@ export async function GET(req: Request) {
 /** Builds the end-of-day summary from the recorded check-ins for that day. */
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) return fail("Create a profile first", 404);
+    const user = await requireUser();
 
     const body = bodySchema.parse(await req.json().catch(() => ({})));
     const date = body.date ?? today();

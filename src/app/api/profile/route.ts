@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { fail, handleError, ok } from "@/lib/api";
-import { getCurrentUser, setSessionUserId } from "@/lib/session";
+import { publicUser, requireUser } from "@/lib/session";
 import { screenUserText } from "@/lib/ai/guardrails";
 import { estimateTargets } from "@/lib/nutrition";
 import {
@@ -37,9 +37,8 @@ const profileSchema = z.object({
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
-    if (!user) return ok({ user: null });
-    return ok({ user, targets: estimateTargets(user) });
+    const user = await requireUser();
+    return ok({ user: publicUser(user), targets: estimateTargets(user) });
   } catch (err) {
     return handleError(err);
   }
@@ -56,15 +55,16 @@ export async function POST(req: Request) {
       return fail(screening.message!, 422, { guardrail: true, reasons: screening.reasons });
     }
 
-    const existing = await getCurrentUser();
-    const user = existing
-      ? await prisma.user.update({ where: { id: existing.id }, data: body })
-      : await prisma.user.create({ data: body });
-
-    await setSessionUserId(user.id);
+    // Profiles are never created here any more — an account exists first, and
+    // this only fills in or edits its wellness details.
+    const existing = await requireUser();
+    const user = await prisma.user.update({
+      where: { id: existing.id },
+      data: { ...body, profileComplete: true },
+    });
 
     return ok({
-      user,
+      user: publicUser(user),
       targets: estimateTargets(user),
       notice: screening.flagged ? screening.message : undefined,
     });

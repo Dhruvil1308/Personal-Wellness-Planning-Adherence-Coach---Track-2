@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { UnauthenticatedError } from "@/lib/session";
 
 export function ok<T>(data: T, init?: number) {
   return NextResponse.json(data, { status: init ?? 200 });
@@ -10,6 +11,9 @@ export function fail(message: string, status = 400, extra?: Record<string, unkno
 }
 
 export function handleError(err: unknown) {
+  if (err instanceof UnauthenticatedError) {
+    return fail(err.message, 401, { unauthenticated: true });
+  }
   if (err instanceof ZodError) {
     return fail("Invalid input", 422, {
       issues: err.issues.map((i) => ({ path: i.path.join("."), message: i.message })),

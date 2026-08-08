@@ -54,3 +54,6 @@ next-env.d.ts
 /.claude/
 /.windsurf/
 skills-lock.json
+
+# generated reminder call audio
+/.reminder-audio/

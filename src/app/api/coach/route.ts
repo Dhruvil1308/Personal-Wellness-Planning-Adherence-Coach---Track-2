@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { fail, handleError, ok } from "@/lib/api";
-import { getCurrentUser } from "@/lib/session";
+import { handleError, ok } from "@/lib/api";
+import { requireUser } from "@/lib/session";
 import { coachReply } from "@/lib/ai/coach";
 import { computeAdherence, type PlanWithItems } from "@/lib/adherence";
 import { getPlan } from "@/lib/services/plans";
@@ -11,8 +11,7 @@ const bodySchema = z.object({ message: z.string().trim().min(1).max(600) });
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
-    if (!user) return ok({ messages: [] });
+    const user = await requireUser();
     const messages = await prisma.coachMessage.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "asc" },
@@ -26,8 +25,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) return fail("Create a profile first", 404);
+    const user = await requireUser();
 
     const { message } = bodySchema.parse(await req.json());
 

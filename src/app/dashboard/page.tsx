@@ -24,7 +24,9 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/onboarding");
+  // Signed out -> the login page. Signed in but no wellness profile yet -> finish it.
+  if (!user) redirect("/login");
+  if (!user.profileComplete) redirect("/onboarding");
 
   const date = todayKey();
   const insights = await getInsights(user.id, date, 14);
@@ -36,7 +38,7 @@ export default async function DashboardPage() {
   if (insights.daysWithPlan === 0) {
     return (
       <div className="mx-auto max-w-6xl space-y-4 px-5 py-8">
-        <h1 className="text-2xl font-bold tracking-tight">Adherence dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Adherence dashboard</h1>
         <EmptyState
           title="Nothing recorded yet"
           body="Generate a plan and log a few check-ins — this page then explains exactly how much of each plan you actually completed, and what keeps slipping."
@@ -54,7 +56,7 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl px-5 py-7">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Adherence dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Adherence dashboard</h1>
         <p className="mt-1 text-sm text-muted">
           Last {insights.trend.length} days · {insights.daysWithPlan} day
           {insights.daysWithPlan === 1 ? "" : "s"} with a plan
@@ -200,7 +202,7 @@ function StreamRow({
             · {Math.round(weight * 100)}% of the score
           </span>
         </span>
-        <span className="font-bold tabular-nums">{pct}%</span>
+        <span className="font-semibold tabular-nums">{pct}%</span>
       </div>
       <ProgressBar value={pct} tone={tone} className="mt-1.5" />
     </div>

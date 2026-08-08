@@ -12,18 +12,29 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
+  id String @id @default(cuid())
+
+  /// Login credentials. Stored lowercased; see src/lib/auth.ts for the hash format.
+  username     String @unique
+  passwordHash String
+
+  /// False until the wellness profile is filled in after registration.
+  profileComplete Boolean @default(false)
+
+  // Wellness profile. Registration only collects credentials, name and mobile,
+  // so these carry neutral defaults until the profile step fills them in —
+  // `profileComplete` is what gates plan generation, never these values.
   name     String
-  ageRange String // "18-24" | "25-34" | ...
+  ageRange String  @default("25-34")
   sex      String? // optional, used only for rough energy estimates
-  heightCm Float
-  weightKg Float
+  heightCm Float   @default(170)
+  weightKg Float   @default(70)
 
-  goal          String // weight_loss | muscle_gain | maintain | energy | stress
-  activityLevel String // sedentary | light | moderate | active
+  goal          String @default("maintain") // weight_loss | muscle_gain | maintain | energy | stress
+  activityLevel String @default("light") // sedentary | light | moderate | active
 
-  dietaryPreference String // vegetarian | vegan | eggetarian | non_veg | jain
-  cuisine           String // north_indian | south_indian | gujarati | mediterranean | global
+  dietaryPreference String @default("vegetarian") // vegetarian | vegan | eggetarian | non_veg | jain
+  cuisine           String @default("north_indian") // north_indian | south_indian | gujarati | ...
   allergies         String @default("") // comma separated, free text
   dislikes          String @default("")
 
@@ -34,6 +45,11 @@ model User {
   sleepTime        String @default("23:00")
   workoutWindowMin Int    @default(30)
 
+  // Outbound reminder calls
+  phone            String? // E.164, e.g. +919824100246
+  remindersEnabled Boolean @default(false)
+  reminderLanguage String  @default("gu-IN")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -41,6 +57,99 @@ model User {
   summaries DailySummary[]
   feedbacks Feedback[]
   messages  CoachMessage[]
+  reminders Reminder[]
+  unlocks   PlanUnlock[]
+  sessions  Session[]
+}
+
+/// Server-side login session. The cookie carries a random token; only its
+/// SHA-256 hash is stored, so a database leak does not hand over live sessions.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// One scheduled outbound reminder call for a single plan item.
+model Reminder {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planItemId String?
+  item       PlanItem? @relation(fields: [planItemId], references: [id], onDelete: Cascade)
+
+  date        String // YYYY-MM-DD the reminder belongs to
+  scheduledAt DateTime // absolute instant the call should fire
+  kind        String // MEAL | WATER | EXERCISE | CUSTOM
+
+  /// Set on user-scheduled calls that are not tied to a plan item.
+  title  String?
+  note   String?
+  /// Repeat rule for user-scheduled calls: ONCE | DAILY
+  repeat String  @default("ONCE")
+
+  toNumber String
+  language String @default("gu-IN")
+
+  /// The exact line the voice agent speaks, in the target language.
+  script    String
+  scriptBy  String  @default("ai") // ai | template
+  audioPath String? // file under .reminder-audio/, served via /api/voice/audio/<id>
+
+  status        String  @default("SCHEDULED") // SCHEDULED | DISPATCHING | RINGING | ANSWERED | COMPLETED | FAILED | CANCELLED
+  attempts      Int     @default(0)
+  callUuid      String?
+  requestUuid   String?
+  failureReason String?
+
+  answeredAt  DateTime?
+  completedAt DateTime?
+  durationSec Int?
+
+  /// Optional Saaras transcription of anything the user said back.
+  transcript String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planItemId])
+  @@index([status, scheduledAt])
+  @@index([userId, date])
+}
+
+/// An explicit, audited override of the adherence gate for one day.
+///
+/// The gate is a hard rule (see src/lib/services/planGate.ts): the previous day
+/// must reach the adherence threshold before the next plan can be generated.
+/// Without an escape hatch that rule deadlocks — a locked day has no plan, a day
+/// with no plan can never be checked in on, so the score can never recover. This
+/// row is that escape hatch, and it is recorded rather than silent so the
+/// override is visible in the history.
+model PlanUnlock {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date String /// the day being unlocked, YYYY-MM-DD
+
+  /// Snapshot of why the gate was closed, kept for the audit trail.
+  blockedByDate String
+  blockedByPct  Float
+  thresholdPct  Float
+  reason        String @default("")
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
 }
 
 model Plan {
@@ -89,6 +198,7 @@ model PlanItem {
   sortOrder     Int     @default(0)
 
   checkIns CheckIn[]
+  reminder Reminder?
 }
 
 model CheckIn {

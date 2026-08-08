@@ -35,7 +35,7 @@ export function DemoControls() {
 
   return (
     <div className="card border-dashed p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-muted">Demo tools</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted">Demo tools</p>
       <p className="mt-1 text-sm leading-relaxed text-muted">
         Seed two past days where the morning workout and breakfast were missed and
         hydration stalled around half. Then generate today and read the adjustment note.

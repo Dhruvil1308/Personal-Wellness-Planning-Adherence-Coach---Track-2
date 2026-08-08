@@ -167,7 +167,7 @@ export async function generatePlan(opts: {
     if (hits.length) {
       console.warn(
         "[ai] allergen violation, regenerating:",
-        hits.map((h) => `${h.title} → ${h.term}`).join(", "),
+        hits.map((h) => `${h.title} contains ${h.term}`).join(", "),
       );
       plan = await completeJSON({
         system: SYSTEM,

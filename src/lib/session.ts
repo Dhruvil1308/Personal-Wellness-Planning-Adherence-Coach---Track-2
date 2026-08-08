@@ -1,42 +1,39 @@
-import { cookies } from "next/headers";
-import { prisma } from "@/lib/db";
+/**
+ * Session access for pages and route handlers.
+ *
+ * This used to be a cookie holding a bare user id, with a fallback to "the only
+ * profile in the database" when the cookie was missing. Both are gone: the
+ * cookie is now an opaque session token (see src/lib/auth.ts) and a missing or
+ * unknown token resolves to `null`, never to somebody else's account.
+ */
+export { getCurrentUser, SESSION_COOKIE } from "@/lib/auth";
 
-export const SESSION_COOKIE = "wellpath_uid";
+import { getCurrentUser } from "@/lib/auth";
+import type { User } from "@/generated/prisma/client";
+
+export class UnauthenticatedError extends Error {
+  constructor() {
+    super("Sign in to continue");
+    this.name = "UnauthenticatedError";
+  }
+}
+
+/** For route handlers that must have a user; throws if there is none. */
+export async function requireUser(): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user) throw new UnauthenticatedError();
+  return user;
+}
+
+export type PublicUser = Omit<User, "passwordHash">;
 
 /**
- * Single-user demo session: the profile id lives in a cookie. There is no auth
- * layer here on purpose — this is a wellness demo, not an account system.
+ * Strips the credential fields before a user row crosses the wire. Every
+ * response that includes a user must go through this — a plain `ok({ user })`
+ * would ship the password hash to the browser.
  */
-export async function getSessionUserId(): Promise<string | null> {
-  const jar = await cookies();
-  return jar.get(SESSION_COOKIE)?.value ?? null;
-}
-
-export async function setSessionUserId(userId: string) {
-  const jar = await cookies();
-  jar.set(SESSION_COOKIE, userId, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
-}
-
-export async function clearSession() {
-  const jar = await cookies();
-  jar.delete(SESSION_COOKIE);
-}
-
-/** Resolves the cookie to a real row, falling back to the only profile if one exists. */
-export async function getCurrentUser() {
-  const id = await getSessionUserId();
-  if (id) {
-    const user = await prisma.user.findUnique({ where: { id } });
-    if (user) return user;
-  }
-  // Cookie missing or stale (e.g. the db was reset) — fall back to the single
-  // existing profile so a demo never dead-ends on a lost cookie.
-  const count = await prisma.user.count();
-  if (count === 1) return prisma.user.findFirst();
-  return null;
+export function publicUser(user: User): PublicUser {
+  const rest: Partial<User> = { ...user };
+  delete rest.passwordHash;
+  return rest as PublicUser;
 }

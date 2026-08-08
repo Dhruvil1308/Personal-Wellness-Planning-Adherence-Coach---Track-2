@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { computeAdherence, type PlanWithItems } from "@/lib/adherence";
 import { generatePlan, type PriorDay } from "@/lib/ai/planner";
 import { generateSummary } from "@/lib/ai/summarizer";
+import { assertPlanUnlocked, type GateStatus } from "@/lib/services/planGate";
 import { yesterdayOf } from "@/lib/date";
 import type { User } from "@/generated/prisma/client";
 
@@ -50,13 +51,20 @@ export type EnsurePlanResult = {
   created: boolean;
   generatedBy: "ai" | "fallback";
   fallbackReason?: string;
+  gate?: GateStatus;
 };
 
-/** Creates the plan for `date` if it does not exist. `force` regenerates it. */
+/**
+ * Creates the plan for `date` if it does not exist. `force` regenerates it.
+ *
+ * Throws `PlanLockedError` when the adherence gate is closed — enforced here
+ * rather than in the route so no caller can create a plan around it. Only
+ * `skipGate` bypasses it, which is reserved for backfilling demo history.
+ */
 export async function ensurePlan(
   user: User,
   date: string,
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean; skipGate?: boolean } = {},
 ): Promise<EnsurePlanResult> {
   const existing = await getPlan(user.id, date);
   if (existing && !opts.force) {
@@ -65,6 +73,13 @@ export async function ensurePlan(
       created: false,
       generatedBy: existing.generatedBy as "ai" | "fallback",
     };
+  }
+
+  // A regenerate of a day that already exists is not a new day, so it is not
+  // re-gated; only bringing a brand-new day into existence is.
+  let gate: GateStatus | undefined;
+  if (!existing && !opts.skipGate) {
+    gate = await assertPlanUnlocked(user.id, date);
   }
 
   const prior = await loadPriorDays(user.id, date, 3);
@@ -109,7 +124,7 @@ export async function ensurePlan(
   });
 
   const plan = await getPlan(user.id, date);
-  return { plan: plan!, created: true, generatedBy, fallbackReason };
+  return { plan: plan!, created: true, generatedBy, fallbackReason, gate };
 }
 
 /** Builds (or rebuilds) the end-of-day summary from recorded check-ins. */

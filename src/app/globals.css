@@ -61,32 +61,51 @@ body {
 @layer components {
   .card {
     @apply rounded-2xl border border-line bg-surface;
+    /* One very soft shadow, so cards lift off the page without a drop-shadow look. */
+    box-shadow: 0 1px 2px rgb(23 33 28 / 0.04);
   }
   .label {
     @apply block text-sm font-medium text-foreground mb-1.5;
   }
   .input {
     @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm
-      text-foreground outline-none transition
-      focus:border-brand focus:ring-2 focus:ring-brand/20;
+      text-foreground outline-none transition placeholder:text-muted/60
+      focus:border-brand focus:ring-[3px] focus:ring-brand/15;
   }
   /* Tailwind v4 cannot @apply a class defined in this same layer, so the base
      button rules are repeated rather than composed from .btn. */
   .btn,
   .btn-primary,
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
-      text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-55;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2.5
+      text-sm font-medium transition
+      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand
+      disabled:cursor-not-allowed disabled:opacity-45;
   }
   .btn-primary {
-    @apply bg-brand text-white hover:bg-brand-strong;
+    @apply bg-brand text-white hover:bg-brand-strong active:bg-brand-strong;
   }
   .btn-ghost {
-    @apply border border-line bg-surface text-foreground hover:bg-brand-soft;
+    @apply border border-line bg-surface text-foreground hover:border-muted/30 hover:bg-background;
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
   }
+}
+
+/* Headings sit one notch lighter than the browser default: the product reads
+   calmer, and weight is then free to signal real emphasis. */
+h1 {
+  @apply text-[26px] font-semibold leading-tight tracking-[-0.015em];
+}
+h2,
+h3 {
+  @apply font-semibold tracking-[-0.01em];
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
 }
 
 @keyframes fade-up {

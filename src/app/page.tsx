@@ -1,35 +1,47 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import {
+  ChecklistIcon,
+  CompassIcon,
+  PhoneIcon,
+  RefreshIcon,
+  UserIcon,
+} from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
 const STEPS = [
   {
-    icon: "👤",
-    title: "Tell it about your day",
-    body: "Age range, height, weight, goal, diet, cuisine, allergies, limitations, wake and sleep times, and how many minutes you really have.",
+    Icon: UserIcon,
+    title: "Sign up and tell it about your day",
+    body: "A username, a password and your mobile number, then age range, height, weight, goal, diet, allergies, limitations, and how many minutes you really have.",
   },
   {
-    icon: "🧭",
+    Icon: CompassIcon,
     title: "Get an explainable plan",
     body: "Meals, hydration and movement, each scheduled around your routine — and each with a plain reason you can read.",
   },
   {
-    icon: "✅",
+    Icon: ChecklistIcon,
     title: "Check in as you go",
     body: "Done, partly done or skipped. Log water a glass at a time. Add a note when something did not fit.",
   },
   {
-    icon: "🔁",
+    Icon: RefreshIcon,
     title: "Tomorrow adapts",
     body: "The next plan is written from your completion record and feedback. What you missed comes back moved, smaller or swapped — never just repeated.",
+  },
+  {
+    Icon: PhoneIcon,
+    title: "And it calls you",
+    body: "At each scheduled time WellPath rings your mobile and delivers the reminder in Gujarati — two seconds after you pick up, then it hangs up on its own.",
   },
 ];
 
 export default async function HomePage() {
   const user = await getCurrentUser();
-  if (user) redirect("/today");
+  if (user) redirect(user.profileComplete ? "/today" : "/onboarding");
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-14">
@@ -37,7 +49,7 @@ export default async function HomePage() {
         Health &amp; wellness · social impact
       </span>
 
-      <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+      <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.08] tracking-[-0.02em] sm:text-[52px]">
         A wellness plan that changes when your{" "}
         <span className="text-brand">real day</span> does.
       </h1>
@@ -49,11 +61,11 @@ export default async function HomePage() {
       </p>
 
       <div className="mt-7 flex flex-wrap items-center gap-3">
-        <Link href="/onboarding" className="btn-primary px-5 py-3 text-base">
-          Build my plan
+        <Link href="/register" className="btn-primary px-5 py-3 text-base">
+          Create your account
         </Link>
-        <Link href="/dashboard" className="btn-ghost px-5 py-3 text-base">
-          See the dashboard
+        <Link href="/login" className="btn-ghost px-5 py-3 text-base">
+          Sign in
         </Link>
       </div>
 
@@ -61,14 +73,14 @@ export default async function HomePage() {
         {STEPS.map((s, i) => (
           <li key={s.title} className="card p-5">
             <div className="flex items-center gap-2.5">
-              <span aria-hidden className="text-2xl">
-                {s.icon}
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand-strong">
+                <s.Icon size={17} />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wide text-muted">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted">
                 Step {i + 1}
               </span>
             </div>
-            <h2 className="mt-2 text-base font-bold">{s.title}</h2>
+            <h2 className="mt-2.5 text-base font-semibold">{s.title}</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted">{s.body}</p>
           </li>
         ))}

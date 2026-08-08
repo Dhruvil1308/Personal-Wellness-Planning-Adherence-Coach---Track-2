@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DailySummary } from "@/generated/prisma/client";
-import { AdherenceRing, AIBadge, ProgressBar } from "@/components/ui";
+import { AdherenceRing, ProgressBar } from "@/components/ui";
 
 function parseList(json: string): string[] {
   try {
@@ -26,7 +26,6 @@ export function SummaryPanel({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generatedBy, setGeneratedBy] = useState<string | null>(null);
 
   async function build() {
     setBusy(true);
@@ -39,7 +38,6 @@ export function SummaryPanel({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not build the summary");
-      setGeneratedBy(data.generatedBy);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not build the summary");
@@ -90,7 +88,7 @@ export function SummaryPanel({
           <div className="grid gap-3 sm:grid-cols-2">
             {wins.length > 0 && (
               <div className="rounded-xl bg-brand-soft p-3.5">
-                <p className="text-xs font-bold uppercase tracking-wide text-brand-strong">
+                <p className="text-xs font-medium uppercase tracking-wide text-brand-strong">
                   What worked
                 </p>
                 <ul className="mt-1.5 space-y-1 text-sm text-brand-strong">
@@ -102,7 +100,7 @@ export function SummaryPanel({
             )}
             {gaps.length > 0 && (
               <div className="rounded-xl bg-warn-soft p-3.5">
-                <p className="text-xs font-bold uppercase tracking-wide text-warn">
+                <p className="text-xs font-medium uppercase tracking-wide text-warn">
                   What slipped
                 </p>
                 <ul className="mt-1.5 space-y-1 text-sm text-warn">
@@ -116,7 +114,7 @@ export function SummaryPanel({
 
           {summary.focusTomorrow && (
             <p className="rounded-xl border border-line bg-background px-3.5 py-3 text-sm">
-              <span className="font-bold">Tomorrow&apos;s focus: </span>
+              <span className="font-semibold">Tomorrow&apos;s focus: </span>
               {summary.focusTomorrow}
             </p>
           )}
@@ -129,7 +127,6 @@ export function SummaryPanel({
         <button type="button" onClick={build} disabled={busy} className="btn-primary">
           {busy ? "Reading your day…" : summary ? "Rebuild summary" : "End my day"}
         </button>
-        {generatedBy && <AIBadge generatedBy={generatedBy} />}
       </div>
     </div>
   );

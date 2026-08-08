@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Adherence, ItemProgress } from "@/lib/adherence";
-import { ProgressBar, STREAM_STYLE, TypeBadge, type StreamKey } from "@/components/ui";
+import { ProgressBar, streamStyle, TypeBadge, type StreamKey } from "@/components/ui";
+import { CheckIcon, CloseIcon, HalfIcon, PlusIcon } from "@/components/icons";
 
 type Props = {
   adherence: Adherence;
@@ -113,14 +114,15 @@ function StreamSummary({ adherence: a }: { adherence: Adherence }) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {rows.map((r) => {
-        const s = STREAM_STYLE[r.key];
+        const s = streamStyle(r.key);
         return (
           <div key={r.key} className="card p-3.5">
             <div className="flex items-baseline justify-between">
-              <span className={`text-xs font-bold uppercase tracking-wide ${s.text}`}>
-                {s.icon} {s.label}
+              <span className={`flex items-center gap-1.5 text-xs font-medium ${s.text}`}>
+                <s.Icon size={14} />
+                {s.label}
               </span>
-              <span className="text-sm font-bold tabular-nums">{r.pct}%</span>
+              <span className="text-sm font-semibold tabular-nums">{r.pct}%</span>
             </div>
             <ProgressBar value={r.pct} tone={s.bg} className="mt-2" />
             <p className="mt-1.5 text-xs text-muted">{r.detail}</p>
@@ -155,7 +157,7 @@ function RowShell({
   extra?: React.ReactNode;
 }) {
   const [showWhy, setShowWhy] = useState(false);
-  const s = STREAM_STYLE[p.item.type as StreamKey] ?? STREAM_STYLE.MEAL;
+  const s = streamStyle(p.item.type);
   const done = p.status === "DONE";
 
   return (
@@ -164,8 +166,8 @@ function RowShell({
     >
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <div className="min-w-14 shrink-0">
-          <p className="text-sm font-bold tabular-nums">{p.item.scheduledTime}</p>
-          <p className="text-[11px] uppercase tracking-wide text-muted">
+          <p className="text-sm font-semibold tabular-nums">{p.item.scheduledTime}</p>
+          <p className="text-[11px] capitalize text-muted">
             {p.item.slot ?? s.label}
           </p>
         </div>
@@ -275,7 +277,8 @@ function TaskRow({
         disabled={busy}
         onClick={() => onStatus("DONE")}
       >
-        ✓ Done
+        <CheckIcon size={14} />
+        Done
       </button>
       <button
         type="button"
@@ -283,7 +286,8 @@ function TaskRow({
         disabled={busy}
         onClick={() => onStatus("PARTIAL")}
       >
-        ◐ Partly
+        <HalfIcon size={14} />
+        Partly
       </button>
       <button
         type="button"
@@ -291,7 +295,8 @@ function TaskRow({
         disabled={busy}
         onClick={() => setNoteOpen((v) => !v)}
       >
-        ✕ Skipped
+        <CloseIcon size={14} />
+        Skipped
       </button>
       {p.status !== "PENDING" && (
         <button
@@ -332,7 +337,7 @@ function WaterRow({
         <div className="mt-2.5">
           <div className="flex items-center gap-2">
             <ProgressBar value={target ? (logged / target) * 100 : 0} tone="bg-water" />
-            <span className="shrink-0 text-xs font-bold tabular-nums text-water">
+            <span className="shrink-0 text-xs font-semibold tabular-nums text-water">
               {Math.round(logged)} / {Math.round(target)} ml
             </span>
           </div>
@@ -340,10 +345,10 @@ function WaterRow({
             {Array.from({ length: glasses }).map((_, i) => (
               <span
                 key={i}
-                className={`text-base transition ${i < filled ? "opacity-100" : "opacity-25 grayscale"}`}
-              >
-                💧
-              </span>
+                className={`h-1.5 w-5 rounded-full transition ${
+                  i < filled ? "bg-water" : "bg-line"
+                }`}
+              />
             ))}
           </div>
         </div>
@@ -357,7 +362,8 @@ function WaterRow({
             disabled={busy}
             onClick={() => onLog(250)}
           >
-            + 250 ml
+            <PlusIcon size={13} />
+            250 ml
           </button>
           <button
             type="button"
@@ -365,7 +371,8 @@ function WaterRow({
             disabled={busy}
             onClick={() => onLog(500)}
           >
-            + 500 ml
+            <PlusIcon size={13} />
+            500 ml
           </button>
           {p.checkInCount > 0 && (
             <button

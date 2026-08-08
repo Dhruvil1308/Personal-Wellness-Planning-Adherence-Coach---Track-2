@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { fail, handleError, ok } from "@/lib/api";
-import { getCurrentUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { screenUserText } from "@/lib/ai/guardrails";
 import { isValidDayKey, today } from "@/lib/date";
 
@@ -16,8 +16,7 @@ const feedbackSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) return fail("Create a profile first", 404);
+    const user = await requireUser();
 
     const body = feedbackSchema.parse(await req.json());
     const date = body.date ?? today();

@@ -1,12 +1,11 @@
 import { fail, handleError, ok } from "@/lib/api";
-import { getCurrentUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { getInsights } from "@/lib/services/insights";
 import { isValidDayKey, today } from "@/lib/date";
 
 export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) return fail("Create a profile first", 404);
+    const user = await requireUser();
 
     const url = new URL(req.url);
     const end = url.searchParams.get("end") ?? today();

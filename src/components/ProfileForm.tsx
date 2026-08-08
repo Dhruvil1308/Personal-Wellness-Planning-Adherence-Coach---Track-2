@@ -72,9 +72,20 @@ function fromUser(user: User): FormState {
   };
 }
 
-export function ProfileForm({ user }: { user: User | null }) {
+export function ProfileForm({
+  user,
+  firstTime = false,
+}: {
+  user: User | null;
+  /** Registration has happened but the wellness details are still defaults. */
+  firstTime?: boolean;
+}) {
   const router = useRouter();
-  const [form, setForm] = useState<FormState>(user ? fromUser(user) : DEFAULTS);
+  const [form, setForm] = useState<FormState>(
+    // On the first pass the row holds schema defaults, not answers — start from
+    // the form defaults but keep the name they registered with.
+    user ? (firstTime ? { ...DEFAULTS, name: user.name } : fromUser(user)) : DEFAULTS,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -119,7 +130,7 @@ export function ProfileForm({ user }: { user: User | null }) {
   return (
     <form onSubmit={submit} className="space-y-5">
       <fieldset className="card p-5">
-        <legend className="px-1 text-sm font-bold uppercase tracking-wide text-muted">
+        <legend className="px-1 text-sm font-medium uppercase tracking-wide text-muted">
           About you
         </legend>
 
@@ -188,7 +199,7 @@ export function ProfileForm({ user }: { user: User | null }) {
       </fieldset>
 
       <fieldset className="card p-5">
-        <legend className="px-1 text-sm font-bold uppercase tracking-wide text-muted">
+        <legend className="px-1 text-sm font-medium uppercase tracking-wide text-muted">
           Goal & routine
         </legend>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -256,7 +267,7 @@ export function ProfileForm({ user }: { user: User | null }) {
       </fieldset>
 
       <fieldset className="card p-5">
-        <legend className="px-1 text-sm font-bold uppercase tracking-wide text-muted">
+        <legend className="px-1 text-sm font-medium uppercase tracking-wide text-muted">
           Food preferences
         </legend>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -331,7 +342,7 @@ export function ProfileForm({ user }: { user: User | null }) {
 
       <div className="flex items-center gap-3">
         <button type="submit" className="btn-primary" disabled={busy}>
-          {busy ? "Saving…" : user ? "Save profile" : "Create my profile"}
+          {busy ? "Saving…" : firstTime ? "Save and continue" : "Save profile"}
         </button>
         <span className="text-xs text-muted">
           Next step: WellPath builds today&apos;s plan from this.

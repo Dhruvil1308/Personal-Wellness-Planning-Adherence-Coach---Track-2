@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { handleError, ok } from "@/lib/api";
-import { getCurrentUser, setSessionUserId } from "@/lib/session";
+import { publicUser, requireUser } from "@/lib/session";
 import { buildDailySummary, ensurePlan, getPlan } from "@/lib/services/plans";
 import { shiftDay, today } from "@/lib/date";
 import type { User } from "@/generated/prisma/client";
@@ -130,10 +130,15 @@ async function applyCheckIns(userId: string, date: string, script: DayScript) {
 
 export async function POST() {
   try {
-    let user: User | null = await getCurrentUser();
-    if (!user) {
-      user = await prisma.user.create({ data: DEMO_PROFILE });
-      await setSessionUserId(user.id);
+    // Seeds history onto the signed-in account. If the wellness profile has not
+    // been filled in yet, the demo profile is applied so there is something
+    // coherent to plan around.
+    let user: User = await requireUser();
+    if (!user.profileComplete) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { ...DEMO_PROFILE, name: user.name || DEMO_PROFILE.name, profileComplete: true },
+      });
     }
 
     const base = today();
@@ -141,7 +146,9 @@ export async function POST() {
 
     for (const script of SCRIPT) {
       const date = shiftDay(base, script.offset);
-      await ensurePlan(user, date, { force: true });
+      // Backfilling history deliberately bypasses the adherence gate — these
+      // days are being created precisely so they can score badly.
+      await ensurePlan(user, date, { force: true, skipGate: true });
       await applyCheckIns(user.id, date, script);
 
       const plan = await getPlan(user.id, date);
@@ -162,7 +169,7 @@ export async function POST() {
     const existingToday = await getPlan(user.id, base);
     if (existingToday) await prisma.plan.delete({ where: { id: existingToday.id } });
 
-    return ok({ user, seeded, todayCleared: true });
+    return ok({ user: publicUser(user), seeded, todayCleared: true });
   } catch (err) {
     return handleError(err);
   }
